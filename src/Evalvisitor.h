@@ -359,6 +359,21 @@ class EvalVisitor: public Python3BaseVisitor {
                             contain[j] = paraments[comparestr];
                     }
                     paraments[str] = contain[j];
+                    if (contain[j].is<std::vector<antlrcpp::Any>>())
+                    {
+                        std::vector<antlrcpp::Any> in = contain[j].as<std::vector<antlrcpp::Any>>();
+                        for (int ji = 0;ji < in.size();++ji,++j)
+                        {
+                            str = para[j].as<std::string>();
+                            if (in[ji].is<std::string>())
+                            {
+                                comparestr = in[ji].as<std::string>();
+                                if (comparestr[0] != '\'' && comparestr[0] != '\"')
+                                    in[ji] = paraments[comparestr];
+                            }
+                            paraments[str] = in[ji];
+                        }
+                    }
                 }
             }
         }
@@ -395,7 +410,25 @@ class EvalVisitor: public Python3BaseVisitor {
     antlrcpp::Any visitReturn_stmt(Python3Parser::Return_stmtContext *ctx) override {
         std::string str = "return";
         if (ctx->testlist() != nullptr){
-            return_value.top() = visit(ctx->testlist());
+            antlrcpp::Any ret = visit(ctx->testlist());
+            std::vector<antlrcpp::Any> temp;
+            if (ret.is<std::vector<antlrcpp::Any>>()) {
+                temp = ret.as<std::vector<antlrcpp::Any>>();
+                std::vector<antlrcpp::Any> add_to_temp;
+                for (int i = 0;i < temp.size();++i)
+                {
+                    if (!temp[i].is<std::vector<antlrcpp::Any>>()) add_to_temp.push_back(temp[i]);
+                    else{
+                        std::vector<antlrcpp::Any> ttemp = temp[i].as<std::vector<antlrcpp::Any>>();
+                        for (int j = 0;j < ttemp.size();++j)
+                        {
+                            add_to_temp.push_back(ttemp[j]);
+                        }
+                    }
+                }
+                ret = add_to_temp;
+            }
+            return_value.top() = ret;
         }
         return str;
     }
@@ -1124,6 +1157,36 @@ class EvalVisitor: public Python3BaseVisitor {
                 toprint = ret2.as<std::vector<antlrcpp::Any>>();
                 for (int i = 0;i < toprint.size();++i)
                 {
+                    if (toprint[i].is<std::vector<antlrcpp::Any>>())
+                    {
+                        std::vector<antlrcpp::Any> in_toprint;
+                        in_toprint = toprint[i].as<std::vector<antlrcpp::Any>>();
+                        for (int j = 0;j < in_toprint.size();++j)
+                        {
+                            if (in_toprint[j].is<std::string>()) {
+                                std::string str = in_toprint[j].as<std::string>();
+                                if (str[0] != '\'' && str[0] != '\"') {
+                                    in_toprint[j] = paraments[str];
+                                }
+                            }
+                            if (in_toprint[j].is<std::string>()) {
+                                std::string str = in_toprint[j].as<std::string>();
+                                str.erase(str.length() - 1, 1);
+                                str.erase(0, 1);
+                                std::cout <<str;
+                            }
+                            if (in_toprint[j].is<bigInteger>()) {
+                                std::cout << in_toprint[j].as<bigInteger>();
+                            }
+                            if (in_toprint[j].is<int>()) {
+                                if (in_toprint[j].as<int>() == -1) std::cout << "None";
+                                if (in_toprint[j].as<int>() == 1) std::cout << "True";
+                                if (in_toprint[j].as<int>() == 0) std::cout << "False";
+                            }
+                            if (in_toprint[j].is<double>()) std::cout << std::fixed << std::setprecision(6) << toprint[i].as<double>();
+                            if (i != toprint.size() - 1 && j != in_toprint.size() - 1) std::cout << ' ';
+                        }
+                    }
                     if (toprint[i].is<std::string>()) {
                         std::string str = toprint[i].as<std::string>();
                         if (str[0] != '\'' && str[0] != '\"') {
@@ -1154,6 +1217,7 @@ class EvalVisitor: public Python3BaseVisitor {
             {
                 level.push(paraments);
                 return_value.push(7);
+                //std::cout<<return_value.top().as<int>()<<'\n';
                 Python3Parser::ParametersContext* temp_parameters = funcparameter[cpstr];
                 if (temp_parameters->typedargslist() != nullptr) {
                     visit(temp_parameters->typedargslist());
@@ -1162,11 +1226,14 @@ class EvalVisitor: public Python3BaseVisitor {
                     if (funcrett.is<std::vector<antlrcpp::Any>>()) {
                         this_value = funcrett.as<std::vector<antlrcpp::Any>>();
                     }
+                    std::map<std::string,antlrcpp::Any> temp = paraments;
+                    //std::cout<<"size "<<this_value.size()<<'\n';
                     for (int i = 0;i < this_value.size();++i)
                     {
                         bool flag = false;
                         std::string str = to_get_value[i];
-                        if (this_value[i].is<int>() && this_value[i].as<int>() == 7) flag = true;
+                        if (this_value[i].is<int>())
+                            if(this_value[i].as<int>() == 7) flag = true;
                         if (!flag) {
                             if (this_value[i].is<std::string>())
                             {
@@ -1174,14 +1241,34 @@ class EvalVisitor: public Python3BaseVisitor {
                                 if (convert[0] != '\'' && convert[0] != '\"')
                                     this_value[i] = paraments[convert];
                             }
-                            paraments[str] = this_value[i];
+                            //std::cout<<str<<'\n';
+                            temp[str] = this_value[i];
                         }
                     }
+                    paraments = temp;
                     to_get_value.clear();
                 }
                 antlrcpp::Any tempreturn;
                 visit(funcsuite[cpstr]);
                 tempreturn = return_value.top();
+                if (tempreturn.is<std::string>()) {
+                    std::string returnstr = tempreturn.as<std::string>();
+                    if (returnstr[0] != '\'' && returnstr[0] != '\"')
+                        tempreturn = paraments[returnstr];
+                }
+                if (tempreturn.is<std::vector<antlrcpp::Any>>()) {
+                    std::vector<antlrcpp::Any> convert = tempreturn.as<std::vector<antlrcpp::Any>>();
+                    for (int i = 0;i < convert.size();++i)
+                    {
+                        if (convert[i].is<std::string>())
+                        {
+                            std::string strpara = convert[i].as<std::string>();
+                            if (strpara[0] != '\'' && strpara[0] != '\"')
+                                convert[i] = paraments[strpara];
+                        }
+                    }
+                    tempreturn = convert;
+                }
                 paraments = level.top();
                 return_value.pop();
                 level.pop();
@@ -1247,7 +1334,8 @@ class EvalVisitor: public Python3BaseVisitor {
         //std::cout<<"visitTestlist"<<'\n';
         std::vector<antlrcpp::Any> temp;
         antlrcpp::Any ret;
-        for (int i = 0;i < ctx->test().size();++i)
+        int i = 0;
+        for (;i < ctx->test().size();++i)
         {
             ret = visit(ctx->test(i));
             temp.push_back(ret);
