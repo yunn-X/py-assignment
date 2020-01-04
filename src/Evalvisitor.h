@@ -9,32 +9,63 @@
 #include <stdlib.h>
 #include <vector>
 #include <iomanip>
+#include <stack>
 
 class EvalVisitor: public Python3BaseVisitor {
 
 //todo:override all methods of Python3BaseVisitor
     std::map<std::string, antlrcpp::Any> paraments;
-
+    std::vector<std::string> to_get_value;
+    std::stack<std::map<std::string,antlrcpp::Any>> level;
+    std::stack<antlrcpp::Any> return_value;
+    std::map<std::string, Python3Parser::ParametersContext*> funcparameter;
+    std::map<std::string, Python3Parser::SuiteContext*> funcsuite;
     antlrcpp::Any visitFile_input(Python3Parser::File_inputContext *ctx) override {
         //std::cout<<"visitFile_input"<<'\n';
+        std::map<std::string,antlrcpp::Any> temp;
+        level.push(temp);
+        paraments = level.top();
         visitChildren(ctx);
+        level.pop();
         return 0;
     }
 
     antlrcpp::Any visitFuncdef(Python3Parser::FuncdefContext *ctx) override {
-        return visitChildren(ctx);
+        //std::cout<<"funcdef\n";
+        std::string name = ctx->NAME()->toString();
+        std::stack<antlrcpp::Any> temp;
+        funcparameter[name] = ctx->parameters();
+        funcsuite[name] = ctx->suite();
+        return 7;
     }
 
     antlrcpp::Any visitParameters(Python3Parser::ParametersContext *ctx) override {
-        return visitChildren(ctx);
+        if (ctx->typedargslist() != nullptr) return visit(ctx->typedargslist());
+        else return 7;
     }
 
     antlrcpp::Any visitTypedargslist(Python3Parser::TypedargslistContext *ctx) override {
-        return visitChildren(ctx);
+        for (int i = 0;i < ctx->tfpdef().size();++i)
+        {
+            std::string temppara = visit(ctx->tfpdef(i));
+            to_get_value.push_back(temppara);
+            paraments[temppara] = 7;
+        }
+        if (ctx->ASSIGN(0) != nullptr)
+        {
+            for (int i = ctx->ASSIGN().size() - 1,j = ctx->tfpdef().size() - 1;i >= 0;--i,--j)
+            {
+                std::string temppara = visit(ctx->tfpdef(j));
+                antlrcpp::Any ret = visit(ctx->test(i));
+                paraments[temppara] = ret;
+            }
+        }
+        return 7;
     }
 
     antlrcpp::Any visitTfpdef(Python3Parser::TfpdefContext *ctx) override {
-        return visitChildren(ctx);
+        std::string str = ctx->NAME()->toString();
+        return str;
     }
 
     antlrcpp::Any visitStmt(Python3Parser::StmtContext *ctx) override {
@@ -221,7 +252,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     ret1bigint = ret1.as<bigInteger>();
                     bigInteger i("1"),num1("1");
                     std::string basestring = ret2str;
-                    ret2str.erase(ret2str.size() - 1,1);
+                    if (ret1bigint > num1) ret2str.erase(ret2str.size() - 1,1);
                     basestring.erase(0,1);
                     for ( ;i < ret1bigint;i += num1) {
                         std::string temp = basestring;
@@ -237,7 +268,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     bigInteger i("1"),num1("1");
                     std::string basestring = ret1.as<std::string>();
                     std::string ansstr = basestring;
-                    ansstr.erase(ansstr.size() - 1,1);
+                    if (ret2bigint > num1) ansstr.erase(ansstr.size() - 1,1);
                     basestring.erase(0,1);
                     for ( ;i < ret2bigint;i += num1) {
                         std::string temp = basestring;
@@ -335,19 +366,27 @@ class EvalVisitor: public Python3BaseVisitor {
     }
 
     antlrcpp::Any visitFlow_stmt(Python3Parser::Flow_stmtContext *ctx) override {
-        return visitChildren(ctx);
+        if (ctx->break_stmt() != nullptr) return visit(ctx->break_stmt());
+        if (ctx->continue_stmt() != nullptr) return visit(ctx->continue_stmt());
+        if (ctx->return_stmt() != nullptr) return visit(ctx->return_stmt());
     }
 
     antlrcpp::Any visitBreak_stmt(Python3Parser::Break_stmtContext *ctx) override {
-        return visitChildren(ctx);
+        std::string str = "break";
+        return str;
     }
 
     antlrcpp::Any visitContinue_stmt(Python3Parser::Continue_stmtContext *ctx) override {
-        return visitChildren(ctx);
+        std::string str = "continue";
+        return str;
     }
 
     antlrcpp::Any visitReturn_stmt(Python3Parser::Return_stmtContext *ctx) override {
-        return visitChildren(ctx);
+        std::string str = "return";
+        if (ctx->testlist() != nullptr){
+            return_value = visit(ctx->testlist());
+        }
+        return str;
     }
 
     antlrcpp::Any visitCompound_stmt(Python3Parser::Compound_stmtContext *ctx) override {
@@ -369,11 +408,17 @@ class EvalVisitor: public Python3BaseVisitor {
             int check = ret1.as<int>();
             if (check == 1)
             {
-                visit(ctx->suite(i));
+                antlrcpp::Any retyes = visit(ctx->suite(i));
+                if (retyes.is<std::string>())
+                {
+                    std::string to_do = retyes.as<std::string>();
+                    if (to_do == "break" || to_do == "continue" || to_do == "return")
+                        return to_do;
+                }
             }
             else continue;
         }
-        if (ctx->ELSE() != nullptr) visit(ctx->suite(ctx->suite().size() - 1));
+        if (ctx->ELSE() != nullptr) return visit(ctx->suite(ctx->suite().size() - 1));
         return 7;
     }
 
@@ -388,7 +433,15 @@ class EvalVisitor: public Python3BaseVisitor {
             }
             int check = ret1.as<int>();
             if (check == 0) break;
-            visit(ctx->suite());
+            antlrcpp::Any temp = visit(ctx->suite());
+            if (temp.is<std::string>())
+            {
+                std::string str;
+                str = temp.as<std::string>();
+                if (str == "break") break;
+                if (str == "continue") continue;
+                if (str == "return") return str;
+            }
         }
         return 7;
     }
@@ -397,7 +450,16 @@ class EvalVisitor: public Python3BaseVisitor {
         if (ctx->simple_stmt() != nullptr) return visit(ctx->simple_stmt());
         if (ctx->stmt(0) != nullptr)  {
             for (int i = 0;i < ctx->stmt().size();++i)
-            visit(ctx->stmt(i));
+            {
+                antlrcpp::Any ret = visit(ctx->stmt(i));
+                if (ret.is<std::string>())
+                {
+                    std::string to_do = ret.as<std::string>();
+                    if (to_do == "break") return std::string("break");
+                    if (to_do == "continue") return std::string("continue");
+                    if (to_do == "return") return std::string("return");
+                }
+            }
         }
         return 7;
     }
@@ -885,21 +947,19 @@ class EvalVisitor: public Python3BaseVisitor {
                 {
                     bigans *= ret2.as<bigInteger>();
                     ret1 = bigans;
-                    ++istar;
                 }
                 if (ret1.is<std::string>() && ret2.is<bigInteger>())
                 {
                     bigInteger bi("1");
                     bigInteger num_1("1");
                     std::string basestr = strans;
-                    strans.erase(strans.size() - 1,1);
+                    if (ret2.as<bigInteger>() > num_1) strans.erase(strans.size() - 1,1);
                     basestr.erase(0,1);
                     for ( ;bi < ret2.as<bigInteger>();bi += num_1)
                     {
                         strans += basestr;
                     }
                     ret1 = strans;
-                    ++istar;
                 }
                 if (ret2.is<std::string>() && ret1.is<bigInteger>())
                 {
@@ -907,30 +967,13 @@ class EvalVisitor: public Python3BaseVisitor {
                     bigInteger num_1("1");
                     std::string basestr = ret2.as<std::string>();
                     strans = basestr;
-                    strans.erase(strans.size() - 1,1);
+                    if (ret1.as<bigInteger>() > num_1) strans.erase(strans.size() - 1,1);
                     basestr.erase(0,1);
                     for ( ;bi < ret1.as<bigInteger>();bi += num_1)
                     {
                         strans += basestr;
                     }
                     ret1 = strans;
-                    ++istar;
-                }
-                if (ret2.is<double>() && ret1.is<bigInteger>())
-                {
-                    double doubleans;
-                    doubleans = (double)ret1.as<bigInteger>();
-                    doubleans *= ret2.as<double>();
-                    ret1 = doubleans;
-                    ++istar;
-                }
-                if (ret1.is<double>() && ret2.is<bigInteger>())
-                {
-                    double doubleans;
-                    doubleans = (double)ret2.as<bigInteger>();
-                    doubleans *= ret1.as<double>();
-                    ret1 = doubleans;
-                    ++istar;
                 }
                 if (ret1.is<double>() && ret2.is<double>())
                 {
@@ -938,8 +981,23 @@ class EvalVisitor: public Python3BaseVisitor {
                     doubleans = ret2.as<double>();
                     doubleans *= ret1.as<double>();
                     ret1 = doubleans;
-                    ++istar;
                 }
+                if (ret2.is<double>() && ret1.is<bigInteger>())
+                {
+                    double doubleans;
+                    doubleans = (double)ret1.as<bigInteger>();
+                    doubleans *= ret2.as<double>();
+                    ret1 = doubleans;
+                    std::cout<<doubleans<<'\n';
+                }
+                if (ret1.is<double>() && ret2.is<bigInteger>())
+                {
+                    double doubleans;
+                    doubleans = (double)ret2.as<bigInteger>();
+                    doubleans *= ret1.as<double>();
+                    ret1 = doubleans;
+                }
+                ++istar;
             }
             if (oprt == "/"){
                 if (ret1.is<double>() && ret2.is<double>())
@@ -1048,7 +1106,44 @@ class EvalVisitor: public Python3BaseVisitor {
                 }
                 return 0;
             }
-        }//改*/
+            else
+            {
+                level.push(paraments);
+                return_value.push(7);
+                Python3Parser::ParametersContext* temp_parameters = funcparameter[cpstr];
+                if (temp_parameters->typedargslist() != nullptr) {
+                    visit(temp_parameters->typedargslist());
+                    antlrcpp::Any funcrett = visit(ctx->trailer());
+                    std::vector<antlrcpp::Any> this_value;
+                    if (funcrett.is<std::vector<antlrcpp::Any>>()) {
+                        this_value = funcrett.as<std::vector<antlrcpp::Any>>();
+                    }
+                    for (int i = 0;i < this_value.size();++i)
+                    {
+                        bool flag = false;
+                        std::string str = to_get_value[i];
+                        if (this_value[i].is<int>() && this_value[i].as<int>() == 7) flag = true;
+                        if (!flag) {
+                            if (this_value[i].is<std::string>())
+                            {
+                                std::string convert = this_value[i].as<std::string>();
+                                if (convert[0] != '\'' && convert[0] != '\"')
+                                    this_value[i] = paraments[convert];
+                            }
+                            paraments[str] = this_value[i];
+                        }
+                    }
+                    to_get_value.clear();
+                }
+                antlrcpp::Any tempreturn;
+                visit(funcsuite[cpstr]);
+                tempreturn = return_value.top();
+                paraments = level.top();
+                return_value.pop();
+                level.pop();
+                return tempreturn;
+            }
+        }
         else return visit(ctx->atom());
         return 0;
     }
@@ -1129,10 +1224,11 @@ class EvalVisitor: public Python3BaseVisitor {
     antlrcpp::Any visitArgument(Python3Parser::ArgumentContext *ctx) override {
         if (ctx->NAME() != nullptr)
         {
-
+            std::string str = ctx->NAME()->toString();
+            paraments[str] = visit(ctx->test());
         }
         else return visit(ctx->test());
-        return 0;
+        return 7;
     }
 
 };
