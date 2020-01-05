@@ -10,6 +10,8 @@
 #include <vector>
 #include <iomanip>
 #include <stack>
+#include <string>
+#include <sstream>
 
 class EvalVisitor: public Python3BaseVisitor {
 
@@ -20,6 +22,8 @@ class EvalVisitor: public Python3BaseVisitor {
     std::stack<antlrcpp::Any> return_value;
     std::map<std::string, Python3Parser::ParametersContext*> funcparameter;
     std::map<std::string, Python3Parser::SuiteContext*> funcsuite;
+    std::map<std::string,antlrcpp::Any> tempmap;
+
     antlrcpp::Any visitFile_input(Python3Parser::File_inputContext *ctx) override {
         //std::cout<<"visitFile_input"<<'\n';
         std::map<std::string,antlrcpp::Any> temp;
@@ -49,7 +53,7 @@ class EvalVisitor: public Python3BaseVisitor {
         {
             std::string temppara = visit(ctx->tfpdef(i));
             to_get_value.push_back(temppara);
-            paraments[temppara] = 7;
+            tempmap[temppara] = 7;
         }
         if (ctx->ASSIGN(0) != nullptr)
         {
@@ -57,7 +61,7 @@ class EvalVisitor: public Python3BaseVisitor {
             {
                 std::string temppara = visit(ctx->tfpdef(j));
                 antlrcpp::Any ret = visit(ctx->test(i));
-                paraments[temppara] = ret;
+                tempmap[temppara] = ret;
             }
         }
         return 7;
@@ -1213,6 +1217,126 @@ class EvalVisitor: public Python3BaseVisitor {
                 }
                 return 0;
             }
+            if (cpstr == "int")
+            {
+                antlrcpp::Any ret2;
+                bigInteger toint;
+                std::string thestr;
+                ret2 = visit(ctx->trailer());
+                while (ret2.is<std::vector<antlrcpp::Any>>())
+                    ret2 = ret2.as<std::vector<antlrcpp::Any>>()[0];
+                if (ret2.is<std::string>())
+                {
+                    std::string strret2 = ret2.as<std::string>();
+                    if (strret2[0] != '\'' && strret2[0] != '\"')
+                        ret2 = paraments[strret2];
+                }
+                if (ret2.is<std::string>())
+                {
+                    thestr = ret2.as<std::string>();
+                    thestr.erase(0,1);
+                    thestr.erase(thestr.size()-1,1);
+                    char *p = &thestr[0];
+                    toint = p;
+                }
+                if (ret2.is<double>())
+                    ret2 = (int)ret2.as<double>();
+                if (ret2.is<int>())
+                {
+                    thestr = std::to_string(ret2.as<int>());
+                    char *p = &thestr[0];
+                    toint = p;
+                }
+                return toint;
+            }
+            if (cpstr == "float")
+            {
+                antlrcpp::Any ret2;
+                ret2 = visit(ctx->trailer());
+                while (ret2.is<std::vector<antlrcpp::Any>>())
+                    ret2 = ret2.as<std::vector<antlrcpp::Any>>()[0];
+                if (ret2.is<std::string>())
+                {
+                    std::string strret2 = ret2.as<std::string>();
+                    if (strret2[0] != '\'' && strret2[0] != '\"')
+                        ret2 = paraments[strret2];
+                }
+                if (ret2.is<bigInteger>())
+                    ret2 = (double)ret2.as<bigInteger>();
+                if (ret2.is<std::string>())
+                {
+                    std::string thestr = ret2.as<std::string>();
+                    thestr.erase(0,1);
+                    thestr.erase(thestr.size()-1,1);
+                    char *p = &thestr[0];
+                    ret2 = atof(p);
+                }
+                if (ret2.is<int>())
+                    ret2 = (double)ret2.as<int>();
+                return ret2;
+            }
+            if (cpstr == "str")
+            {
+                antlrcpp::Any ret2;
+                ret2 = visit(ctx->trailer());
+                while (ret2.is<std::vector<antlrcpp::Any>>())
+                    ret2 = ret2.as<std::vector<antlrcpp::Any>>()[0];
+                if (ret2.is<std::string>())
+                {
+                    std::string strret2 = ret2.as<std::string>();
+                    if (strret2[0] != '\'' && strret2[0] != '\"')
+                        ret2 = paraments[strret2];
+                }
+                if (ret2.is<bigInteger>())
+                    ret2 = (std::string)ret2.as<bigInteger>();
+                if (ret2.is<int>())
+                {
+                    int theint = ret2.as<int>();
+                    if (theint == 1) ret2 = std::string("True");
+                    if (theint == 0) ret2 = std::string("False");
+                    if (theint == -1) ret2 = std::string("None");
+                }
+                if (ret2.is<double>())
+                {
+                    std::stringstream ss;
+                    ss << ret2.as<double>();
+                    ret2 = ss.str();
+                }
+                return ret2;
+            }
+            if (cpstr == "bool")
+            {
+                antlrcpp::Any ret2;
+                int thebool;
+                ret2 = visit(ctx->trailer());
+                while (ret2.is<std::vector<antlrcpp::Any>>())
+                    ret2 = ret2.as<std::vector<antlrcpp::Any>>()[0];
+                if (ret2.is<std::string>())
+                {
+                    std::string strret2 = ret2.as<std::string>();
+                    if (strret2[0] != '\'' && strret2[0] != '\"')
+                        ret2 = paraments[strret2];
+                }
+                if (ret2.is<bigInteger>())
+                {
+                    ret2 = (bool)ret2.as<bigInteger>();
+                    thebool = ret2.as<bool>();
+                }
+                if (ret2.is<double>())
+                {
+                    ret2 = (bool)ret2.as<double>();
+                    thebool = ret2.as<bool>();
+                }
+                if (ret2.is<std::string>())
+                {
+                    std::string strret2 = ret2.as<std::string>();
+                    strret2.erase(0,1);
+                    strret2.erase(strret2.size()-1,1);
+                    if (strret2 == "") thebool = 0;
+                    else thebool = 1;
+                }
+                return thebool;
+            }
             else
             {
                 level.push(paraments);
@@ -1226,7 +1350,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     if (funcrett.is<std::vector<antlrcpp::Any>>()) {
                         this_value = funcrett.as<std::vector<antlrcpp::Any>>();
                     }
-                    std::map<std::string,antlrcpp::Any> temp = paraments;
+                    tempmap = paraments;
                     //std::cout<<"size "<<this_value.size()<<'\n';
                     for (int i = 0;i < this_value.size();++i)
                     {
@@ -1242,10 +1366,10 @@ class EvalVisitor: public Python3BaseVisitor {
                                     this_value[i] = paraments[convert];
                             }
                             //std::cout<<str<<'\n';
-                            temp[str] = this_value[i];
+                            tempmap[str] = this_value[i];
                         }
                     }
-                    paraments = temp;
+                    paraments = tempmap;
                     to_get_value.clear();
                 }
                 antlrcpp::Any tempreturn;
