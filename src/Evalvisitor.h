@@ -703,7 +703,9 @@ class EvalVisitor: public Python3BaseVisitor {
             ret1 = ret1.as<std::vector<antlrcpp::Any>>()[0];
         if(ret1.is<std::string>()) {
             ret1str = ret1.as<std::string>();
-            if (ret1str[0] != '\'' && ret1str !="\"") ret1 = paraments[ret1str];
+            if (ret1str[0] != '\'' && ret1str[0] != '\"') {
+                ret1 = paraments[ret1str];
+            }
         }
         int n = ctx->arith_expr().size();
         for (int i = 1;i < n;++i)
@@ -716,7 +718,37 @@ class EvalVisitor: public Python3BaseVisitor {
                 ret2 = ret2.as<std::vector<antlrcpp::Any>>()[0];
             if(ret2.is<std::string>()) {
                 ret2str = ret2.as<std::string>();
-                if (ret2str[0] != '\'' && ret2str[0] != '\"') ret2 = paraments[ret2str];
+                if (ret2str[0] != '\'' && ret2str[0] != '\"')
+                    ret2 = paraments[ret2str];
+            }
+            if (ret1.is<int>() && ret2.is<int>())
+            {
+                int int1 = ret1.as<int>(), int2 = ret2.as<int>();
+                if (compstr == "<")
+                    if (int1 >= int2) return 0;
+                if (compstr == ">")
+                    if (int1 <= int2) return 0;
+                if (compstr == "==")
+                    if (int1 != int2) return 0;
+                if (compstr == ">=")
+                    if (int1 < int2) return 0;
+                if (compstr == "<=")
+                    if (int1 > int2) return 0;
+                if (compstr == "!=")
+                    if (int1 == int2) return 0;
+            }
+            bigInteger one("1"),zero("0");
+            if (ret1.is<int>() && !ret2.is<int>())
+            {
+                int theint = ret1.as<int>();
+                if (theint == 1) ret1 = one;
+                if (theint == 0) ret1 = zero;
+            }
+            if (!ret1.is<int>() && ret2.is<int>())
+            {
+                int theint = ret2.as<int>();
+                if (theint == 1) ret2 = one;
+                if (theint == 0) ret2 = zero;
             }
             if (ret1.is<bigInteger>() && ret2.is<bigInteger>())
             {
@@ -741,15 +773,15 @@ class EvalVisitor: public Python3BaseVisitor {
                 char *pstr1 = &str1[0], *pstr2 = &str2[0];
                 int result = strcmp(pstr1,pstr2);
                 if (compstr == "<")
-                    if (result != -1) return 0;
+                    if (result >= 0) return 0;
                 if (compstr == ">")
-                    if (result != 1) return 0;
+                    if (result <= 0) return 0;
                 if (compstr == "==")
                     if (result != 0) return 0;
                 if (compstr == ">=")
-                    if (result == -1) return 0;
+                    if (result < 0) return 0;
                 if (compstr == "<=")
-                    if (result == 1) return 0;
+                    if (result > 0) return 0;
                 if (compstr == "!=")
                     if (result == 0) return 0;
             }
@@ -770,128 +802,6 @@ class EvalVisitor: public Python3BaseVisitor {
                     if (double1 > double2) return 0;
                 if (compstr == "!=")
                     if (double1 == double2) return 0;
-            }
-            if (ret1.is<int>() && ret2.is<int>())
-            {
-                int int1 = ret1.as<int>(), int2 = ret2.as<int>();
-                if (compstr == "<")
-                    if (int1 >= int2) return 0;
-                if (compstr == ">")
-                    if (int1 <= int2) return 0;
-                if (compstr == "==")
-                    if (int1 != int2) return 0;
-                if (compstr == ">=")
-                    if (int1 < int2) return 0;
-                if (compstr == "<=")
-                    if (int1 > int2) return 0;
-                if (compstr == "!=")
-                    if (int1 == int2) return 0;
-            }
-            if ((ret1.is<int>() && !ret2.is<int>()) || (!ret1.is<int>() && ret2.is<int>()))
-            {
-                int fint;
-                bool cpbool;
-                double fdouble;
-                bigInteger fbigint;
-                std::string fstr;
-                if (ret1.is<int>()){
-                    fint = ret1.as<int>();
-                    cpbool = fint;
-                    if (ret2.is<double>())
-                    {
-                        fdouble = ret2.as<double>();
-                        if (compstr == "==")
-                            if (fint != fdouble) return 0;
-                        if (compstr == "!=")
-                            if (fint == fdouble) return 0;
-                        if (compstr == "<")
-                            if (fint >= fdouble) return 0;
-                        if (compstr == ">")
-                            if (fint <= fdouble) return 0;
-                        if (compstr == ">=")
-                            if (fint < fdouble) return 0;
-                        if (compstr == "<=")
-                            if (fint > fdouble) return 0;
-                    }
-                    if (ret2.is<std::string>())
-                    {
-                        fstr = ret2.as<std::string>();
-                        bool bstr;
-                        bstr = !fstr.empty();
-                        if (compstr == "==")
-                            if (cpbool != bstr) return 0;
-                        if (compstr == "!=")
-                            if (cpbool == bstr) return 0;
-                    }
-                    if (ret2.is<bigInteger>())
-                    {
-                        fbigint = ret2.as<bigInteger>();
-                        bigInteger f;
-                        if (fint == 1) f = "1";
-                        if (fint == 0) f = "0";
-                        if (compstr == "==")
-                            if (f != fbigint) return 0;
-                        if (compstr == "!=")
-                            if (f == fbigint) return 0;
-                        if (compstr == "<")
-                            if (f >= fbigint) return 0;
-                        if (compstr == ">")
-                            if (f <= fbigint) return 0;
-                        if (compstr == ">=")
-                            if (f < fbigint) return 0;
-                        if (compstr == "<=")
-                            if (f > fbigint) return 0;
-                    }
-                }
-                if (ret2.is<int>()){
-                    fint = ret2.as<int>();
-                    cpbool = fint;
-                    if (ret1.is<double>())
-                    {
-                        fdouble = ret1.as<double>();
-                        if (compstr == "==")
-                            if (fint != fdouble) return 0;
-                        if (compstr == "!=")
-                            if (fint == fdouble) return 0;
-                        if (compstr == "<")
-                            if (fint <= fdouble) return 0;
-                        if (compstr == ">")
-                            if (fint >= fdouble) return 0;
-                        if (compstr == ">=")
-                            if (fint > fdouble) return 0;
-                        if (compstr == "<=")
-                            if (fint < fdouble) return 0;
-                    }
-                    if (ret1.is<std::string>())
-                    {
-                        fstr = ret1.as<std::string>();
-                        bool bstr;
-                        bstr = !fstr.empty();
-                        if (compstr == "==")
-                            if (cpbool != bstr) return 0;
-                        if (compstr == "!=")
-                            if (cpbool == bstr) return 0;
-                    }
-                    if (ret1.is<bigInteger>())
-                    {
-                        fbigint = ret1.as<bigInteger>();
-                        bigInteger f;
-                        if (fint == 1) f = "1";
-                        if (fint == 0) f = "0";
-                        if (compstr == "==")
-                            if (fbigint != fbigint) return 0;
-                        if (compstr == "!=")
-                            if (fbigint == fbigint) return 0;
-                        if (compstr == "<")
-                            if (f <= fbigint) return 0;
-                        if (compstr == ">")
-                            if (f >= fbigint) return 0;
-                        if (compstr == ">=")
-                            if (f > fbigint) return 0;
-                        if (compstr == "<=")
-                            if (f < fbigint) return 0;
-                    }
-                }
             }
             ret1 = ret2;
         }
@@ -1430,6 +1340,7 @@ class EvalVisitor: public Python3BaseVisitor {
             if (cpstr == "str")
             {
                 antlrcpp::Any ret2;
+                std::string yinhao = "\'";
                 ret2 = visit(ctx->trailer());
                 while (ret2.is<std::vector<antlrcpp::Any>>())
                     ret2 = ret2.as<std::vector<antlrcpp::Any>>()[0];
@@ -1440,7 +1351,9 @@ class EvalVisitor: public Python3BaseVisitor {
                         ret2 = paraments[strret2];
                 }
                 if (ret2.is<bigInteger>())
+                {
                     ret2 = (std::string)ret2.as<bigInteger>();
+                }
                 if (ret2.is<int>())
                 {
                     int theint = ret2.as<int>();
@@ -1450,7 +1363,8 @@ class EvalVisitor: public Python3BaseVisitor {
                 }
                 if (ret2.is<double>())
                     ret2 = std::to_string(ret2.as<double>());
-                return ret2;
+                std::string ans = yinhao + ret2.as<std::string>() + yinhao;
+                return ans;
             }
             if (cpstr == "bool")
             {
