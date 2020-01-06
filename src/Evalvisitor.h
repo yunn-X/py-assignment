@@ -503,6 +503,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     if (to_do == "break" || to_do == "continue" || to_do == "return")
                         return to_do;
                 }
+                return 7;
             }
             else continue;
         }
@@ -1301,64 +1302,70 @@ class EvalVisitor: public Python3BaseVisitor {
             {
                 antlrcpp::Any ret2;
                 ret2 = visit(ctx->trailer());
-                std::vector<antlrcpp::Any> toprint;
-                toprint = ret2.as<std::vector<antlrcpp::Any>>();
-                for (int i = 0;i < toprint.size();++i)
+                if (!(ret2.is<int>() && ret2.as<int>() == 7))
                 {
-                    if (toprint[i].is<std::vector<antlrcpp::Any>>())
+                    std::vector<antlrcpp::Any> toprint;
+                    toprint = ret2.as<std::vector<antlrcpp::Any>>();
+                    for (int i = 0; i < toprint.size(); ++i)
                     {
-                        std::vector<antlrcpp::Any> in_toprint;
-                        in_toprint = toprint[i].as<std::vector<antlrcpp::Any>>();
-                        for (int j = 0;j < in_toprint.size();++j)
+                        if (toprint[i].is<std::vector<antlrcpp::Any>>())
                         {
-                            if (in_toprint[j].is<std::string>()) {
-                                std::string str = in_toprint[j].as<std::string>();
-                                if (str[0] != '\'' && str[0] != '\"') {
-                                    in_toprint[j] = paraments[str];
+                            std::vector<antlrcpp::Any> in_toprint;
+                            in_toprint = toprint[i].as<std::vector<antlrcpp::Any>>();
+                            for (int j = 0; j < in_toprint.size(); ++j)
+                            {
+                                if (in_toprint[j].is<std::string>())
+                                {
+                                    std::string str = in_toprint[j].as<std::string>();
+                                    if (str[0] != '\'' && str[0] != '\"')
+                                        in_toprint[j] = paraments[str];
                                 }
+                                if (in_toprint[j].is<std::string>())
+                                {
+                                    std::string str = in_toprint[j].as<std::string>();
+                                    str.erase(str.length() - 1, 1);
+                                    str.erase(0, 1);
+                                    std::cout << str;
+                                }
+                                if (in_toprint[j].is<bigInteger>())
+                                    std::cout << in_toprint[j].as<bigInteger>();
+                                if (in_toprint[j].is<int>())
+                                {
+                                    if (in_toprint[j].as<int>() == -1) std::cout << "None";
+                                    if (in_toprint[j].as<int>() == 1) std::cout << "True";
+                                    if (in_toprint[j].as<int>() == 0) std::cout << "False";
+                                }
+                                if (in_toprint[j].is<double>())
+                                    std::cout << std::fixed << std::setprecision(6) << toprint[i].as<double>();
+                                if (i != toprint.size() - 1 && j != in_toprint.size() - 1) std::cout << ' ';
                             }
-                            if (in_toprint[j].is<std::string>()) {
-                                std::string str = in_toprint[j].as<std::string>();
-                                str.erase(str.length() - 1, 1);
-                                str.erase(0, 1);
-                                std::cout <<str;
-                            }
-                            if (in_toprint[j].is<bigInteger>()) {
-                                std::cout << in_toprint[j].as<bigInteger>();
-                            }
-                            if (in_toprint[j].is<int>()) {
-                                if (in_toprint[j].as<int>() == -1) std::cout << "None";
-                                if (in_toprint[j].as<int>() == 1) std::cout << "True";
-                                if (in_toprint[j].as<int>() == 0) std::cout << "False";
-                            }
-                            if (in_toprint[j].is<double>()) std::cout << std::fixed << std::setprecision(6) << toprint[i].as<double>();
-                            if (i != toprint.size() - 1 && j != in_toprint.size() - 1) std::cout << ' ';
                         }
-                    }
-                    if (toprint[i].is<std::string>()) {
-                        std::string str = toprint[i].as<std::string>();
-                        if (str[0] != '\'' && str[0] != '\"') {
-                            toprint[i] = paraments[str];
+                        if (toprint[i].is<std::string>())
+                        {
+                            std::string str = toprint[i].as<std::string>();
+                            if (str[0] != '\'' && str[0] != '\"')
+                                toprint[i] = paraments[str];
                         }
+                        if (toprint[i].is<std::string>())
+                        {
+                            std::string str = toprint[i].as<std::string>();
+                            str.erase(str.length() - 1, 1);
+                            str.erase(0, 1);
+                            std::cout << str;
+                        }
+                        if (toprint[i].is<bigInteger>())
+                            std::cout << toprint[i].as<bigInteger>();
+                        if (toprint[i].is<int>()) {
+                            if (toprint[i].as<int>() == -1) std::cout << "None";
+                            if (toprint[i].as<int>() == 1) std::cout << "True";
+                            if (toprint[i].as<int>() == 0) std::cout << "False";
+                        }
+                        if (toprint[i].is<double>())
+                            std::cout << std::fixed << std::setprecision(6) << toprint[i].as<double>();
+                        if (i != toprint.size() - 1) std::cout << ' ';
                     }
-                    if (toprint[i].is<std::string>()) {
-                        std::string str = toprint[i].as<std::string>();
-                        str.erase(str.length() - 1, 1);
-                        str.erase(0, 1);
-                        std::cout <<str;
-                    }
-                    if (toprint[i].is<bigInteger>()) {
-                        std::cout << toprint[i].as<bigInteger>();
-                    }
-                    if (toprint[i].is<int>()) {
-                        if (toprint[i].as<int>() == -1) std::cout << "None";
-                        if (toprint[i].as<int>() == 1) std::cout << "True";
-                        if (toprint[i].as<int>() == 0) std::cout << "False";
-                    }
-                    if (toprint[i].is<double>()) std::cout << std::fixed << std::setprecision(6) << toprint[i].as<double>();
-                    if (i != toprint.size() - 1) std::cout << ' ';
-                    else std::cout << "\r\n";
                 }
+                std::cout << "\r\n";
                 return 0;
             }
             if (cpstr == "int")
