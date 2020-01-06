@@ -1639,6 +1639,12 @@ class EvalVisitor: public Python3BaseVisitor {
             {
                 ret = ret.as<std::vector<antlrcpp::Any>>()[0];
             }
+            if (ret.is<std::string>())
+            {
+                std::string retstr = ret.as<std::string>();
+                if (retstr[0] != '\'' && retstr[0] != '\"')
+                    ret = paraments[retstr];
+            }
             tempmap[str] = ret;
             return 7;
         }
