@@ -371,6 +371,7 @@ class EvalVisitor: public Python3BaseVisitor {
                 contain = ret2.as<std::vector<antlrcpp::Any>>();
                 if (contain[0].is<std::vector<antlrcpp::Any>>())
                     contain = contain[0].as<std::vector<antlrcpp::Any>>();
+                std::map<std::string,antlrcpp::Any> assigntemp = paraments;
                 for (int j = 0;j < para.size();++j)
                 {
                     std::string str = para[j].as<std::string>();
@@ -379,7 +380,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     {
                         comparestr = contain[j].as<std::string>();
                         if (comparestr[0] != '\'' && comparestr[0] != '\"')
-                            contain[j] = paraments[comparestr];
+                            contain[j] = assigntemp[comparestr];
                     }
                         paraments[str] = contain[j];
                     if (contain[j].is<std::vector<antlrcpp::Any>>())
@@ -392,7 +393,7 @@ class EvalVisitor: public Python3BaseVisitor {
                             {
                                 comparestr = in[ji].as<std::string>();
                                 if (comparestr[0] != '\'' && comparestr[0] != '\"')
-                                    in[ji] = paraments[comparestr];
+                                    in[ji] = assigntemp[comparestr];
                             }
                             paraments[str] = in[ji];
                         }
