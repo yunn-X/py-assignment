@@ -1503,7 +1503,7 @@ class EvalVisitor: public Python3BaseVisitor {
                 --is_global;
                 if(!tempreturn.empty()) return tempreturn;
                 else {
-                    return std::string("return");
+                    return 7;
                 }
             }
         }
