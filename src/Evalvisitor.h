@@ -1341,6 +1341,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     thestr.erase(thestr.size()-1,1);
                     char *p = &thestr[0];
                     toint = p;
+                    ret2 = toint;
                 }
                 if (ret2.is<double>())
                     ret2 = (int)ret2.as<double>();
@@ -1349,8 +1350,9 @@ class EvalVisitor: public Python3BaseVisitor {
                     thestr = std::to_string(ret2.as<int>());
                     char *p = &thestr[0];
                     toint = p;
+                    ret2 = toint;
                 }
-                return toint;
+                return ret2;
             }
             if (cpstr == "float")
             {
@@ -1405,7 +1407,8 @@ class EvalVisitor: public Python3BaseVisitor {
                 if (ret2.is<double>())
                     ret2 = std::to_string(ret2.as<double>());
                 std::string ans = yinhao + ret2.as<std::string>() + yinhao;
-                return ans;
+                ret2 = ans;
+                return ret2;
             }
             if (cpstr == "bool")
             {
