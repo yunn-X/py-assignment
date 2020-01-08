@@ -25,7 +25,6 @@ class EvalVisitor: public Python3BaseVisitor {
     std::map<std::string, Python3Parser::ParametersContext*> funcparameter;
     std::map<std::string, Python3Parser::SuiteContext*> funcsuite;
     int is_global = 0;
-    int is_new_func = 0;
 
     antlrcpp::Any visitFile_input(Python3Parser::File_inputContext *ctx) override {
         //std::cout<<"visitFile_input"<<'\n';
@@ -1443,7 +1442,6 @@ class EvalVisitor: public Python3BaseVisitor {
             }
             else
             {
-                ++is_new_func;
                 std::vector<std::string> tov;
                 to_get_value.push(tov);
                 std::vector<antlrcpp::Any> toov;
@@ -1461,26 +1459,17 @@ class EvalVisitor: public Python3BaseVisitor {
                     antlrcpp::Any funcrett = visit(ctx->trailer());
                     std::vector<antlrcpp::Any> this_value;
                     if (funcrett.is<std::vector<antlrcpp::Any>>()) {
-                        //std::cout<<"getpara\n";
                         this_value = funcrett.as<std::vector<antlrcpp::Any>>();
-                       // if (this_value[0].is<std::string>()) std::cout<<"is_String\n";
-                        //std::cout<<"size "<<this_value.size()<<'\n';
                     }
-                    //std::cout<<"size "<<this_value.size()<<'\n';
                     for (int i = 0;i < this_value.size();++i)
                     {
                         bool flag = false;
-                        //std::cout<<"before\n";
-                        //std::cout<<to_get_value.top().size()<<'\n';
                         std::string str = to_get_value.top()[i];
-                        //std::cout<<"??\n";
                         if (this_value[i].is<int>())
                         {
                             if(this_value[i].as<int>() == 7) flag = true;
                         }
-                        //std::cout<<flag<<"flag\n";
                         if (!flag) {
-                           //std::cout<<"getnum\n";
                             if (this_value[i].is<std::string>())
                             {
                                 std::string convert = this_value[i].as<std::string>();
@@ -1510,7 +1499,6 @@ class EvalVisitor: public Python3BaseVisitor {
                     }
                     tempreturn = convert;
                 }*/
-                --is_new_func;
                 paraments = level.top();
                 return_value.pop();
                 level.pop();
@@ -1653,6 +1641,8 @@ class EvalVisitor: public Python3BaseVisitor {
         {
             //std::cout<<"?????\n";
             std::string str = ctx->NAME()->toString();
+            if (ret.is<std::vector<antlrcpp::Any>>())
+                ret = ret.as<std::vector<antlrcpp::Any>>()[0];
             tempmap.top()[str] = ret;
             return 7;
         }
