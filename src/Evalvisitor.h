@@ -901,25 +901,6 @@ class EvalVisitor: public Python3BaseVisitor {
             }
             return str;
         }
-        /*if (type.is<bigInteger>())
-        {
-            for (int i = 0;i < ctx->term().size();++i)
-            {
-                antlrcpp::Any check = visit(ctx->term(i));
-                if (check.is<std::vector<antlrcpp::Any>>())
-                    check = check.as<std::vector<antlrcpp::Any>>()[0];
-                if (check.is<std::string>())
-                {
-                    std::string checkstr = check.as<std::string>();
-                    check = paraments[checkstr];
-                }
-                if (check.is<double>())
-                {
-                    type = (double)type.as<bigInteger>();
-                    break;
-                }
-            }
-        }*/
         int i = 1, ia = 0, im = 0;
         if (type.is<bigInteger>())
         {
@@ -1347,17 +1328,22 @@ class EvalVisitor: public Python3BaseVisitor {
                     thestr.erase(0,1);
                     thestr.erase(thestr.size()-1,1);
                     char *p = &thestr[0];
-                    toint = p;
-                    ret2 = toint;
+                    //toint = p;
+                    ret2 = bigInteger(p);
                 }
                 else if (ret2.is<double>())
+                {
                     ret2 = (int)ret2.as<double>();
+                    std::string to_bigint = std::to_string(ret2.as<int>());
+                    char *p = &to_bigint[0];
+                    ret2 = bigInteger(p);
+                }
                 else if (ret2.is<int>())
                 {
                     thestr = std::to_string(ret2.as<int>());
                     char *p = &thestr[0];
-                    toint = p;
-                    ret2 = toint;
+                    //toint = p;
+                    ret2 = bigInteger(p);
                 }
                 return ret2;
             }
@@ -1400,6 +1386,8 @@ class EvalVisitor: public Python3BaseVisitor {
                     if (strret2[0] != '\'' && strret2[0] != '\"')
                         ret2 = paraments[strret2];
                 }
+                bool is_str = false;
+                if (ret2.is<std::string>()) is_str = true;
                 if (ret2.is<bigInteger>())
                 {
                     ret2 = (std::string)ret2.as<bigInteger>();
@@ -1413,8 +1401,11 @@ class EvalVisitor: public Python3BaseVisitor {
                 }
                 else if (ret2.is<double>())
                     ret2 = std::to_string(ret2.as<double>());
-                std::string ans = yinhao + ret2.as<std::string>() + yinhao;
-                ret2 = ans;
+                if (!is_str)
+                {
+                    std::string ans = yinhao + ret2.as<std::string>() + yinhao;
+                    ret2 = ans;
+                }
                 return ret2;
             }
             if (cpstr == "bool")
