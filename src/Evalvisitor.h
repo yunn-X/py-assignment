@@ -18,7 +18,7 @@ class EvalVisitor: public Python3BaseVisitor {
 //todo:override all methods of Python3BaseVisitor
     std::map<std::string, antlrcpp::Any> paraments;//当前层变量
     std::map<std::string, antlrcpp::Any> global_variables;//全局变量
-    std::stack<std::vector<std::string>> to_get_value;//对形参赋值（a,b）这种传入方式
+    std::stack<std::vector<std::string>> to_get_value;//形参名
     std::stack<std::map<std::string,antlrcpp::Any>> level;//变量的栈
     std::stack<std::map<std::string,antlrcpp::Any>> tempmap;//赋形参变量时的栈
     std::stack<std::vector<antlrcpp::Any>> return_value;//函数返回值
@@ -28,16 +28,12 @@ class EvalVisitor: public Python3BaseVisitor {
 
     antlrcpp::Any visitFile_input(Python3Parser::File_inputContext *ctx) override {
         //std::cout<<"visitFile_input"<<'\n';
-        std::map<std::string,antlrcpp::Any> temp;
-        level.push(temp);
-        paraments = level.top();
         for (int i = 0;i < ctx->stmt().size();++i)
         {
             antlrcpp::Any ret = visit(ctx->stmt(i));
             if (ret.is<std::string>() && ret.as<std::string>() == "return")
                 return 0;
         }
-        level.pop();
         return 0;
     }
 
@@ -168,7 +164,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     temp += ret2str;
                     paraments[ret1str] = temp;
                 }
-                if (ret1.is<bigInteger>() && ret2.is<bigInteger>())
+                else if (ret1.is<bigInteger>() && ret2.is<bigInteger>())
                 {
                     bigInteger ret1bigint, ret2bigint;
                     ret1bigint = ret1.as<bigInteger>();
@@ -176,7 +172,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     ret1bigint += ret2bigint;
                     paraments[ret1str] = ret1bigint;
                 }
-                if (ret1.is<double>() && ret2.is<double>())
+                else if (ret1.is<double>() && ret2.is<double>())
                 {
                     double ret1double, ret2double;
                     ret1double = ret1.as<double>();
@@ -184,7 +180,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     ret1double += ret2double;
                     paraments[ret1str] = ret1double;
                 }
-                if (ret1.is<double>() && ret2.is<bigInteger>())
+                else if (ret1.is<double>() && ret2.is<bigInteger>())
                 {
                     double ret1double;
                     bigInteger ret2bigint;
@@ -193,7 +189,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     ret1double += (double)ret2bigint;
                     paraments[ret1str] = ret1double;
                 }
-                if (ret2.is<double>() && ret1.is<bigInteger>())
+                else if (ret2.is<double>() && ret1.is<bigInteger>())
                 {
                     double ret2double;
                     bigInteger ret1bigint;
@@ -203,7 +199,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     paraments[ret1str] = ret2double;
                 }
             }
-            if (str_augassign == "-="){
+            else if (str_augassign == "-="){
                 if (ret1.is<bigInteger>() && ret2.is<bigInteger>())
                 {
                     bigInteger ret1bigint, ret2bigint;
@@ -212,7 +208,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     ret1bigint -= ret2bigint;
                     paraments[ret1str] = ret1bigint;
                 }
-                if (ret1.is<double>() && ret2.is<double>())
+                else if (ret1.is<double>() && ret2.is<double>())
                 {
                     double ret1double, ret2double;
                     ret1double = ret1.as<double>();
@@ -220,7 +216,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     ret1double -= ret2double;
                     paraments[ret1str] = ret1double;
                 }
-                if (ret1.is<double>() && ret2.is<bigInteger>())
+                else if (ret1.is<double>() && ret2.is<bigInteger>())
                 {
                     double ret1double;
                     bigInteger ret2bigint;
@@ -229,7 +225,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     ret1double -= (double)ret2bigint;
                     paraments[ret1str] = ret1double;
                 }
-                if (ret2.is<double>() && ret1.is<bigInteger>())
+                else if (ret2.is<double>() && ret1.is<bigInteger>())
                 {
                     double ret2double;
                     bigInteger ret1bigint;
@@ -239,7 +235,8 @@ class EvalVisitor: public Python3BaseVisitor {
                     paraments[ret1str] = -ret2double;
                 }
             }
-            if (str_augassign == "*="){
+            else if (str_augassign == "*="){
+                bigInteger zero("0");
                 if (ret1.is<bigInteger>() && ret2.is<bigInteger>())
                 {
                     bigInteger ret1bigint, ret2bigint;
@@ -248,7 +245,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     ret1bigint *= ret2bigint;
                     paraments[ret1str] = ret1bigint;
                 }
-                if (ret1.is<double>() && ret2.is<double>())
+                else if (ret1.is<double>() && ret2.is<double>())
                 {
                     double ret1double, ret2double;
                     ret1double = ret1.as<double>();
@@ -256,7 +253,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     ret1double *= ret2double;
                     paraments[ret1str] = ret1double;
                 }
-                if (ret1.is<double>() && ret2.is<bigInteger>())
+                else if (ret1.is<double>() && ret2.is<bigInteger>())
                 {
                     double ret1double;
                     bigInteger ret2bigint;
@@ -265,7 +262,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     ret1double *= (double)ret2bigint;
                     paraments[ret1str] = ret1double;
                 }
-                if (ret2.is<double>() && ret1.is<bigInteger>())
+                else if (ret2.is<double>() && ret1.is<bigInteger>())
                 {
                     double ret2double;
                     bigInteger ret1bigint;
@@ -274,8 +271,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     ret2double *= (double)ret1bigint;
                     paraments[ret1str] = ret2double;
                 }
-                bigInteger zero("0");
-                if (ret1.is<bigInteger>() && ret2.is<std::string>())
+                else if (ret1.is<bigInteger>() && ret2.is<std::string>())
                 {
                     bigInteger ret1bigint;
                     ret1bigint = ret1.as<bigInteger>();
@@ -291,7 +287,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     }
                     paraments[ret1str] = ret2str;
                 }
-                if (ret2.is<bigInteger>() && ret1.is<std::string>())
+                else if (ret2.is<bigInteger>() && ret1.is<std::string>())
                 {
                     bigInteger ret2bigint;
                     ret2bigint = ret2.as<bigInteger>();
@@ -309,7 +305,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     paraments[ret1str] = ansstr;
                 }
             }
-            if (str_augassign == "/="){
+            else if (str_augassign == "/="){
                 if (ret1.is<double>() && ret2.is<double>())
                 {
                     double ret1double, ret2double;
@@ -318,7 +314,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     ret1double /= ret2double;
                     paraments[ret1str] = ret1double;
                 }
-                if (ret1.is<double>() && ret2.is<bigInteger>())
+                else if (ret1.is<double>() && ret2.is<bigInteger>())
                 {
                     double ret1double;
                     bigInteger ret2bigint;
@@ -327,7 +323,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     ret1double /= (double)ret2bigint;
                     paraments[ret1str] = ret1double;
                 }
-                if (ret2.is<double>() && ret1.is<bigInteger>())
+                else if (ret2.is<double>() && ret1.is<bigInteger>())
                 {
                     double ret2double,ans;
                     bigInteger ret1bigint;
@@ -336,7 +332,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     ans = (double)ret1bigint / ret2double;
                     paraments[ret1str] = ans;
                 }
-                if (ret2.is<bigInteger>() && ret1.is<bigInteger>())
+                else if (ret2.is<bigInteger>() && ret1.is<bigInteger>())
                 {
                     double ans;
                     bigInteger ret1bigint;
@@ -345,7 +341,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     paraments[ret1str] = ans;
                 }
             }
-            if (str_augassign == "//="){
+            else if (str_augassign == "//="){
                 if (ret1.is<bigInteger>() && ret2.is<bigInteger>())
                 {
                     bigInteger ret1bigint, ret2bigint;
@@ -355,7 +351,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     paraments[ret1str] = ret1bigint;
                 }
             }
-            if (str_augassign == "%="){
+            else if (str_augassign == "%="){
                 if (ret1.is<bigInteger>() && ret2.is<bigInteger>())
                 {
                     bigInteger ret1bigint, ret2bigint;
@@ -414,11 +410,11 @@ class EvalVisitor: public Python3BaseVisitor {
     antlrcpp::Any visitAugassign(Python3Parser::AugassignContext *ctx) override {
         std::string str_augassign;
         if (ctx->ADD_ASSIGN()) str_augassign = "+=";
-        if (ctx->SUB_ASSIGN()) str_augassign = "-=";
-        if (ctx->MULT_ASSIGN()) str_augassign = "*=";
-        if (ctx->DIV_ASSIGN()) str_augassign = "/=";
-        if (ctx->IDIV_ASSIGN()) str_augassign = "//=";
-        if (ctx->MOD_ASSIGN()) str_augassign = "%=";
+        else if (ctx->SUB_ASSIGN()) str_augassign = "-=";
+        else if (ctx->MULT_ASSIGN()) str_augassign = "*=";
+        else if (ctx->DIV_ASSIGN()) str_augassign = "/=";
+        else if (ctx->IDIV_ASSIGN()) str_augassign = "//=";
+        else if (ctx->MOD_ASSIGN()) str_augassign = "%=";
         return str_augassign;
     }
 
@@ -513,12 +509,12 @@ class EvalVisitor: public Python3BaseVisitor {
                 ret1 = (bool)ret1.as<bigInteger>();
                 ret1 = (int)ret1.as<bool>();
             }
-            if (ret1.is<double>())
+            else if (ret1.is<double>())
             {
                 ret1 = (bool)ret1.as<double>();
                 ret1 = (int)ret1.as<bool>();
             }
-            if (ret1.is<std::string>())
+            else if (ret1.is<std::string>())
             {
                 std::string strret1 = ret1.as<std::string>();
                 strret1.erase(0,1);
@@ -561,12 +557,12 @@ class EvalVisitor: public Python3BaseVisitor {
                 ret1 = (bool)ret1.as<bigInteger>();
                 ret1 = (int)ret1.as<bool>();
             }
-            if (ret1.is<double>())
+            else if (ret1.is<double>())
             {
                 ret1 = (bool)ret1.as<double>();
                 ret1 = (int)ret1.as<bool>();
             }
-            if (ret1.is<std::string>())
+            else if (ret1.is<std::string>())
             {
                 std::string strret1 = ret1.as<std::string>();
                 strret1.erase(0,1);
@@ -627,17 +623,18 @@ class EvalVisitor: public Python3BaseVisitor {
                 if (str[0] != '\'' && str[0] != '\"')
                     ret = paraments[str];
             }
-            if (ret.is<bigInteger>())
+            if (ret.is<int>());
+            else if (ret.is<bigInteger>())
             {
                 ret = (bool)ret.as<bigInteger>();
                 ret = (int)ret.as<bool>();
             }
-            if (ret.is<double>())
+            else if (ret.is<double>())
             {
                 ret = (bool)ret.as<double>();
                 ret = (int)ret.as<bool>();
             }
-            if (ret.is<std::string>())
+            else if (ret.is<std::string>())
             {
                 std::string strret1 = ret.as<std::string>();
                 strret1.erase(0,1);
@@ -665,17 +662,18 @@ class EvalVisitor: public Python3BaseVisitor {
                 if (str[0] != '\'' && str[0] != '\"')
                     ret = paraments[str];
             }
-            if (ret.is<bigInteger>())
+            if (ret.is<int>());
+            else if (ret.is<bigInteger>())
             {
                 ret = (bool)ret.as<bigInteger>();
                 ret = (int)ret.as<bool>();
             }
-            if (ret.is<double>())
+            else if (ret.is<double>())
             {
                 ret = (bool)ret.as<double>();
                 ret = (int)ret.as<bool>();
             }
-            if (ret.is<std::string>())
+            else if (ret.is<std::string>())
             {
                 std::string strret1 = ret.as<std::string>();
                 strret1.erase(0,1);
@@ -701,17 +699,18 @@ class EvalVisitor: public Python3BaseVisitor {
                 if (str[0] != '\'' && str[0] != '\"')
                     ret = paraments[str];
             }
-            if (ret.is<bigInteger>())
+            if (ret.is<int>());
+            else if (ret.is<bigInteger>())
             {
                 ret = (bool)ret.as<bigInteger>();
                 ret = (int)ret.as<bool>();
             }
-            if (ret.is<double>())
+            else if (ret.is<double>())
             {
                 ret = (bool)ret.as<double>();
                 ret = (int)ret.as<bool>();
             }
-            if (ret.is<std::string>())
+            else if (ret.is<std::string>())
             {
                 std::string strret1 = ret.as<std::string>();
                 strret1.erase(0,1);
@@ -758,6 +757,7 @@ class EvalVisitor: public Python3BaseVisitor {
                 if (ret2str[0] != '\'' && ret2str[0] != '\"')
                     ret2 = paraments[ret2str];
             }
+            bigInteger one("1"),zero("0");
             if (ret1.is<int>() && ret2.is<int>())
             {
                 int int1 = ret1.as<int>(), int2 = ret2.as<int>();
@@ -774,20 +774,19 @@ class EvalVisitor: public Python3BaseVisitor {
                 if (compstr == "!=")
                     if (int1 == int2) return 0;
             }
-            bigInteger one("1"),zero("0");
-            if (ret1.is<int>() && !ret2.is<int>())
+            else if (ret1.is<int>() && !ret2.is<int>())
             {
                 int theint = ret1.as<int>();
                 if (theint == 1) ret1 = one;
                 if (theint == 0) ret1 = zero;
             }
-            if (!ret1.is<int>() && ret2.is<int>())
+            else if (!ret1.is<int>() && ret2.is<int>())
             {
                 int theint = ret2.as<int>();
                 if (theint == 1) ret2 = one;
                 if (theint == 0) ret2 = zero;
             }
-            if (ret1.is<bigInteger>() && ret2.is<bigInteger>())
+            else if (ret1.is<bigInteger>() && ret2.is<bigInteger>())
             {
                 bigInteger bigint1 = ret1.as<bigInteger>(), bigint2 = ret2.as<bigInteger>();
                 if (compstr == "<")
@@ -803,7 +802,7 @@ class EvalVisitor: public Python3BaseVisitor {
                 if (compstr == "!=")
                     if (bigint1 == bigint2) return 0;
             }
-            if (ret1.is<std::string>() && ret2.is<std::string>())
+            else if (ret1.is<std::string>() && ret2.is<std::string>())
             {
                 std::string str1 = ret1.as<std::string>();
                 std::string str2 = ret2.as<std::string>();
@@ -826,10 +825,10 @@ class EvalVisitor: public Python3BaseVisitor {
                 if (compstr == "!=")
                     if (result == 0) return 0;
             }
-            if (ret1.is<double>() || ret2.is<double>())
+            else if (ret1.is<double>() || ret2.is<double>())
             {
                 if (ret1.is<bigInteger>()) ret1 = (double)ret1.as<bigInteger>();
-                if (ret2.is<bigInteger>()) ret2 = (double)ret2.as<bigInteger>();
+                else if (ret2.is<bigInteger>()) ret2 = (double)ret2.as<bigInteger>();
                 double double1 = ret1.as<double>(), double2 = ret2.as<double>();
                 if (compstr == "<")
                     if (double1 >= double2) return 0;
@@ -902,7 +901,7 @@ class EvalVisitor: public Python3BaseVisitor {
             }
             return str;
         }
-        if (type.is<bigInteger>())
+        /*if (type.is<bigInteger>())
         {
             for (int i = 0;i < ctx->term().size();++i)
             {
@@ -920,12 +919,13 @@ class EvalVisitor: public Python3BaseVisitor {
                     break;
                 }
             }
-        }
+        }*/
+        int i = 1, ia = 0, im = 0;
         if (type.is<bigInteger>())
         {
             bigInteger ans;
             ans = type.as<bigInteger>();
-            for (int i = 1, ia = 0, im = 0;i < ctx->term().size();++i)
+            for (;i < ctx->term().size();)
             {
                 antlrcpp::Any temp = visit(ctx->term(i));
                 if (temp.is<std::vector<antlrcpp::Any>>())
@@ -934,6 +934,10 @@ class EvalVisitor: public Python3BaseVisitor {
                 if(temp.is<std::string>()) {
                     tempstr = temp.as<std::string>();
                     if (tempstr[0] != '\'' && tempstr[0] != '\"') temp = paraments[tempstr];
+                }
+                if (temp.is<double>()) {
+                    type = (double)ans;
+                    break;
                 }
                 if (temp.is<int>())
                 {
@@ -960,14 +964,15 @@ class EvalVisitor: public Python3BaseVisitor {
                     ans -= temp.as<bigInteger>();
                     ++im;
                 }
+                ++i;
             }
-            return ans;
+            if (type.is<bigInteger>()) return ans;
         }
         if (type.is<double>())
         {
             double ans;
             ans = type.as<double>();
-            for (int i = 1, ia = 0, im = 0;i < ctx->term().size();++i)
+            for (;i < ctx->term().size();++i)
             {
                 antlrcpp::Any temp = visit(ctx->term(i));
                 if (temp.is<std::vector<antlrcpp::Any>>())
@@ -1024,8 +1029,8 @@ class EvalVisitor: public Python3BaseVisitor {
             {
                 ret1 = paraments[strans];
                 if (ret1.is<bigInteger>()) bigans = ret1.as<bigInteger>();
-                if (ret1.is<std::string>()) strans = ret1.as<std::string>();
-                if (ret1.is<int>()){
+                else if (ret1.is<std::string>()) strans = ret1.as<std::string>();
+                else if (ret1.is<int>()){
                     if (ret1.as<int>() == 1) bigans = "1";
                     if (ret1.as<int>() == 0) bigans = "0";
                     ret1 = bigans;
@@ -1097,7 +1102,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     bigans *= ret2.as<bigInteger>();
                     ret1 = bigans;
                 }
-                if (ret1.is<std::string>() && ret2.is<bigInteger>())
+                else if (ret1.is<std::string>() && ret2.is<bigInteger>())
                 {
                     bigInteger bi("1");
                     bigInteger num_1("1");
@@ -1113,7 +1118,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     strans += strans[0];
                     ret1 = strans;
                 }
-                if (ret2.is<std::string>() && ret1.is<bigInteger>())
+                else if (ret2.is<std::string>() && ret1.is<bigInteger>())
                 {
                     bigInteger bi("1");
                     bigInteger num_1("1");
@@ -1130,21 +1135,21 @@ class EvalVisitor: public Python3BaseVisitor {
                     strans += strans[0];
                     ret1 = strans;
                 }
-                if (ret1.is<double>() && ret2.is<double>())
+                else if (ret1.is<double>() && ret2.is<double>())
                 {
                     double doubleans;
                     doubleans = ret2.as<double>();
                     doubleans *= ret1.as<double>();
                     ret1 = doubleans;
                 }
-                if (ret2.is<double>() && ret1.is<bigInteger>())
+                else if (ret2.is<double>() && ret1.is<bigInteger>())
                 {
                     double doubleans;
                     doubleans = (double)ret1.as<bigInteger>();
                     doubleans *= ret2.as<double>();
                     ret1 = doubleans;
                 }
-                if (ret1.is<double>() && ret2.is<bigInteger>())
+                else if (ret1.is<double>() && ret2.is<bigInteger>())
                 {
                     double doubleans;
                     doubleans = (double)ret2.as<bigInteger>();
@@ -1153,7 +1158,7 @@ class EvalVisitor: public Python3BaseVisitor {
                 }
                 ++istar;
             }
-            if (oprt == "/"){
+            else if (oprt == "/"){
                 if (ret1.is<double>() && ret2.is<double>())
                 {
                     double doubleans;
@@ -1162,7 +1167,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     ret1 = doubleans;
                     ++idiv;
                 }
-                if (ret1.is<double>() && ret2.is<bigInteger>())
+                else if (ret1.is<double>() && ret2.is<bigInteger>())
                 {
                     double doubleans;
                     doubleans = ret1.as<double>();
@@ -1170,7 +1175,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     ret1 = doubleans;
                     ++idiv;
                 }
-                if (ret1.is<bigInteger>() && ret2.is<double>())
+                else if (ret1.is<bigInteger>() && ret2.is<double>())
                 {
                     double doubleans;
                     doubleans = (double) ret1.as<bigInteger>();
@@ -1178,7 +1183,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     ret1 = doubleans;
                     ++idiv;
                 }
-                if (ret1.is<bigInteger>() && ret2.is<bigInteger>())
+                else if (ret1.is<bigInteger>() && ret2.is<bigInteger>())
                 {
                     double doubleans;
                     doubleans = (double) ret1.as<bigInteger>();
@@ -1187,7 +1192,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     ++idiv;
                 }
             }
-            if (oprt == "//"){
+            else if (oprt == "//"){
                 if (ret2.is<bigInteger>() && ret1.is<bigInteger>())
                 {
                     bigans /= ret2.as<bigInteger>();
@@ -1195,7 +1200,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     ++iidiv;
                 }
             }
-            if (oprt == "%"){
+            else if (oprt == "%"){
                 if (ret2.is<bigInteger>() && ret1.is<bigInteger>())
                 {
                     bigans = bigans % ret2.as<bigInteger>();
@@ -1205,7 +1210,7 @@ class EvalVisitor: public Python3BaseVisitor {
             }
         }
         return ret1;
-    }///!!!!
+    }
 
     antlrcpp::Any visitFactor(Python3Parser::FactorContext *ctx) override {
         //std::cout<<"factor"<<'\n';
@@ -1234,7 +1239,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     bigInteger ans = zero - ret.as<bigInteger>();
                     return ans;
                 }
-                if (ret.is<double>())
+                else if (ret.is<double>())
                     return -ret.as<double>();
             }
             return ret;
@@ -1279,15 +1284,15 @@ class EvalVisitor: public Python3BaseVisitor {
                                     str.erase(0, 1);
                                     std::cout << str;
                                 }
-                                if (in_toprint[j].is<bigInteger>())
+                                else if (in_toprint[j].is<bigInteger>())
                                     std::cout << in_toprint[j].as<bigInteger>();
-                                if (in_toprint[j].is<int>())
+                                else if (in_toprint[j].is<int>())
                                 {
                                     if (in_toprint[j].as<int>() == -1) std::cout << "None";
                                     if (in_toprint[j].as<int>() == 1) std::cout << "True";
                                     if (in_toprint[j].as<int>() == 0) std::cout << "False";
                                 }
-                                if (in_toprint[j].is<double>())
+                                else if (in_toprint[j].is<double>())
                                     std::cout << std::fixed << std::setprecision(6) << toprint[i].as<double>();
                                 if (i != toprint.size() - 1 || j != in_toprint.size() - 1) {
                                     std::cout << ' ';
@@ -1307,14 +1312,14 @@ class EvalVisitor: public Python3BaseVisitor {
                             str.erase(0, 1);
                             std::cout << str;
                         }
-                        if (toprint[i].is<bigInteger>())
+                        else if (toprint[i].is<bigInteger>())
                             std::cout << toprint[i].as<bigInteger>();
-                        if (toprint[i].is<int>()) {
+                        else if (toprint[i].is<int>()) {
                             if (toprint[i].as<int>() == -1) std::cout << "None";
-                            if (toprint[i].as<int>() == 1) std::cout << "True";
-                            if (toprint[i].as<int>() == 0) std::cout << "False";
+                            else if (toprint[i].as<int>() == 1) std::cout << "True";
+                            else if (toprint[i].as<int>() == 0) std::cout << "False";
                         }
-                        if (toprint[i].is<double>())
+                        else if (toprint[i].is<double>())
                             std::cout << std::fixed << std::setprecision(6) << toprint[i].as<double>();
                         if (i != toprint.size() - 1) std::cout << ' ';
                     }
@@ -1322,7 +1327,7 @@ class EvalVisitor: public Python3BaseVisitor {
                 std::cout << "\r\n";
                 return 7;
             }
-            if (cpstr == "int")
+            else if (cpstr == "int")
             {
                 antlrcpp::Any ret2;
                 bigInteger toint;
@@ -1345,9 +1350,9 @@ class EvalVisitor: public Python3BaseVisitor {
                     toint = p;
                     ret2 = toint;
                 }
-                if (ret2.is<double>())
+                else if (ret2.is<double>())
                     ret2 = (int)ret2.as<double>();
-                if (ret2.is<int>())
+                else if (ret2.is<int>())
                 {
                     thestr = std::to_string(ret2.as<int>());
                     char *p = &thestr[0];
@@ -1370,7 +1375,7 @@ class EvalVisitor: public Python3BaseVisitor {
                 }
                 if (ret2.is<bigInteger>())
                     ret2 = (double)ret2.as<bigInteger>();
-                if (ret2.is<std::string>())
+                else if (ret2.is<std::string>())
                 {
                     std::string thestr = ret2.as<std::string>();
                     thestr.erase(0,1);
@@ -1378,7 +1383,7 @@ class EvalVisitor: public Python3BaseVisitor {
                     char *p = &thestr[0];
                     ret2 = atof(p);
                 }
-                if (ret2.is<int>())
+                else if (ret2.is<int>())
                     ret2 = (double)ret2.as<int>();
                 return ret2;
             }
@@ -1399,14 +1404,14 @@ class EvalVisitor: public Python3BaseVisitor {
                 {
                     ret2 = (std::string)ret2.as<bigInteger>();
                 }
-                if (ret2.is<int>())
+                else if (ret2.is<int>())
                 {
                     int theint = ret2.as<int>();
                     if (theint == 1) ret2 = std::string("True");
-                    if (theint == 0) ret2 = std::string("False");
-                    if (theint == -1) ret2 = std::string("None");
+                    else if (theint == 0) ret2 = std::string("False");
+                    else if (theint == -1) ret2 = std::string("None");
                 }
-                if (ret2.is<double>())
+                else if (ret2.is<double>())
                     ret2 = std::to_string(ret2.as<double>());
                 std::string ans = yinhao + ret2.as<std::string>() + yinhao;
                 ret2 = ans;
@@ -1430,12 +1435,12 @@ class EvalVisitor: public Python3BaseVisitor {
                     ret2 = (bool)ret2.as<bigInteger>();
                     thebool = ret2.as<bool>();
                 }
-                if (ret2.is<double>())
+                else if (ret2.is<double>())
                 {
                     ret2 = (bool)ret2.as<double>();
                     thebool = ret2.as<bool>();
                 }
-                if (ret2.is<std::string>())
+                else if (ret2.is<std::string>())
                 {
                     std::string strret2 = ret2.as<std::string>();
                     strret2.erase(0,1);
@@ -1486,13 +1491,13 @@ class EvalVisitor: public Python3BaseVisitor {
                 }
                 to_get_value.pop();
                 paraments = tempmap.top();
+                tempmap.pop();
                 std::vector<antlrcpp::Any> tempreturn;
                 visit(funcsuite[cpstr]);
                 tempreturn = return_value.top();
                 paraments = level.top();
                 return_value.pop();
                 level.pop();
-                tempmap.pop();
                 --is_global;
                 if(!tempreturn.empty()) return tempreturn;
                 else {
